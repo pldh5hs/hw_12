@@ -3,11 +3,11 @@ import json
 
 app = Flask(__name__)
 
-with open("settings.json", "r") as f:
+with open("settings.json", "r", encoding='utf-8') as f:
     settings = json.load(f)
     # print(settings["online"])
 
-with open("candidates.json", "r") as f:
+with open("candidates.json", "r", encoding='utf-8') as f:
     candidates = json.load(f)
     # print(candidates)
 
@@ -24,29 +24,18 @@ def mainpage():
 def candidate(x):
     for candidate in candidates:
         if candidate["id"] == x:
-            page_candidate = f"""
-            <h1>{candidate["name"]}</h1>
-            <p>{candidate["position"]}</p>
-            <img src="{candidate["picture"]}" width=200/>
-            <p>{candidate["skills"]}</p>
-"""
-            return page_candidate
+            return render_template('candidate.html', candidate=candidate)
 
 
 @app.route("/list")
 def list():
-    list_candidate = "<h1>Все кандидаты</h1>"
-    for candidate in candidates:
-        list_candidate += f"""
-        <p><a href="/candidate/{candidate["id"]}">{candidate["name"]}</a></p>
-"""
-    return list_candidate
+    return render_template('list.html', candidates=candidates)
 
 
 @app.route("/search")
 def search():
     counter = 0
-    name_candidate = ""
+    name_candidate = []
     query = request.values.get("name")
     for candidate in candidates:
         if settings["case-sensitive"] is False:
@@ -54,29 +43,24 @@ def search():
             candidate["name"] = candidate["name"].lower()
         if query in candidate["name"]:
             counter += 1
-            name_candidate += f"""<p><a href="/candidate/{candidate["id"]}">{candidate["name"].title()}</a></p>"""
-    search_name_candidate = f"""
-    <h1>найдено кандидатов {counter}</h2>
-    {name_candidate}"""
-    return search_name_candidate
+            name_candidate.append(candidate)
+        candidate["name"] = candidate["name"].title()
+    return render_template('search.html', candidates=name_candidate, counter=counter)
 
 
 @app.route("/skill/<sk>")
 def skill(sk):
     counter1 = 0
-    skill_candidate = ""
+    skill_candidate = []
     sk = sk.lower()
     quantity = settings["limit"]
     for candidate in candidates:
         if sk in candidate["skills"].lower():
             counter1 += 1
-            skill_candidate += f"""<p><a href="/candidate/{candidate["id"]}">{candidate["name"]}</a></p>"""
+            skill_candidate.append(candidate)
             if quantity == counter1:
                 break
-    return f"""
-            <h1>Найдено со скиллом {sk}: {counter1}</h2>
-            {skill_candidate}
-"""
+    return render_template('search.html', candidates=skill_candidate, counter=counter1, sk=sk)
 
 
 app.run()
